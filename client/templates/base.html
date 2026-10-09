@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Governance{% endblock %} · Co-so-sys</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('index') if false else '#' }}">Co-so-sys<small>Member governance</small></a>
+      <div>
+        <div class="nav-label">Workspace</div>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="/" class="{% if active_page|default('') == 'overview' %}active{% endif %}"><span class="nav-icon">◫</span><span class="nav-text">Overview</span></a>
+          <a href="/proposals" class="{% if active_page|default('') == 'proposals' %}active{% endif %}"><span class="nav-icon">▤</span><span class="nav-text">Proposals</span></a>
+          <a href="/treasury" class="{% if active_page|default('') == 'treasury' %}active{% endif %}"><span class="nav-icon">◈</span><span class="nav-text">Treasury</span></a>
+          <a href="/chat" class="{% if active_page|default('') == 'chat' %}active{% endif %}"><span class="nav-icon">▱</span><span class="nav-text">Chat</span></a>
+          <a href="/members" class="{% if active_page|default('') == 'members' %}active{% endif %}"><span class="nav-icon">♙</span><span class="nav-text">Members</span></a>
+        </nav>
+      </div>
+      <div class="sidebar-note">Transparent decisions.<br>Shared responsibility.</div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Workspace <span aria-hidden="true">/</span> {% block breadcrumb %}Overview{% endblock %}</div>
+        <div class="user-chip"><span class="avatar">AM</span><span>Member account</span></div>
+      </header>
+      <section class="content">
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

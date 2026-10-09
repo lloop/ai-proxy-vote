@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Community Chat{% endblock %}
+{% block breadcrumb %}Chat{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Community Chat</h1>
+        <p class="subtitle">Open discussion space for general members and organizers.</p>
+    </div>
+    <div>
+        <label for="userSelect" style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px;">Acting User:</label>
+        <select id="userSelect" onchange="updateActiveUser()" style="width: 200px;">
+            <option value="1">organizer_alex (Organizer)</option>
+            <option value="2">member_sam (General)</option>
+        </select>
+    </div>
+</div>
+
+<div class="card" style="display: flex; flex-direction: column; height: 600px;">
+    <!-- Chat Message Feed -->
+    <div id="chatMessages" style="flex-grow: 1; overflow-y: auto; padding-right: 8px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div class="empty">Loading messages...</div>
+    </div>
+
+    <!-- Message Input Form -->
+    <div style="display: flex; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px;">
+        <input type="text" id="chatInput" placeholder="Type a message to the community..." onkeydown="handleKeyPress(event)" style="flex-grow: 1;">
+        <button class="button primary" onclick="sendChatMessage()">Send Message</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentUserId = 1;
+
+    function updateActiveUser() {
+        currentUserId = document.getElementById('userSelect').value;
+    }
+
+    async function fetchChat() {
+        try {
+            const res = await fetch('/api/chat');
+            const messages = await res.json();
+            const container = document.getElementById('chatMessages');
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty">No messages yet. Start the conversation below!</div>';
+                return;
+            }
+
+            container.innerHTML = messages.map(m => `
+                <div style="background: #121620; border: 1px solid var(--line); padding: 12px; border-radius: var(--radius);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 700; color: var(--accent);">${m.username}</span>
+                        <span style="font-size: 11px; color: var(--muted);">${m.timestamp}</span>
+                    </div>
+                    <p style="word-break: break-word;">${m.content}</p>
+                </div>
+            `).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        } catch (err) {
+            console.error('Failed to load chat messages', err);
+        }
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const content = input.value.trim();
+        if (!content) return;
+
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUserId, content })
+        });
+
+        if (res.ok) {
+            input.value = '';
+            fetchChat();
+        } else {
+            const err = await res.json();
+            alert('Error: ' + (err.error || 'Could not send message'));
+        }
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendChatMessage();
+        }
+    }
+
+    // Initial load and live polling
+    fetchChat();
+    setInterval(fetchChat, 5000);
+</script>
+{% endblock %}

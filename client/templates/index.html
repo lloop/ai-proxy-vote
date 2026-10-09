@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% set active_page = "overview" %}
+{% block title %}Overview{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Governance overview</h1>
+    <p class="subtitle">Proposals, discussions, membership, and shared funds.</p>
+  </div>
+  <a class="button primary" href="/proposals#new-proposal">+ New proposal</a>
+</div>
+
+<div class="grid stats">
+  <div class="card">
+    <div class="stat-label">Active proposals</div>
+    <div class="stat-value">{{ active_proposals|default(4) }}</div>
+    <div class="stat-foot">Awaiting a decision</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">In discussion</div>
+    <div class="stat-value">{{ discussion_count|default(1) }}</div>
+    <div class="stat-foot">Two-day discussion phase</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Active members</div>
+    <div class="stat-value">{{ active_members|default(25) }}</div>
+    <div class="stat-foot">Participating in governance</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Treasury balance</div>
+    <div class="stat-value">{{ treasury_balance|default('€12,480') }}</div>
+    <div class="stat-foot">Illustrative balance</div>
+  </div>
+</div>
+
+<div class="grid two-col">
+  <section class="card">
+    <div class="card-head">
+      <h2>Proposals requiring attention</h2>
+      <a class="text-link" href="/proposals">View all</a>
+    </div>
+    <div class="list">
+      {% for proposal in proposals|default([
+        {'id':'P-024','title':'Community tool library','status':'Challenge period','tone':'amber','deadline':'1d 8h left'},
+        {'id':'P-023','title':'Quarterly maintenance fund','status':'Discussion','tone':'blue','deadline':'2d remaining'},
+        {'id':'P-021','title':'Shared workspace schedule','status':'Voting','tone':'blue','deadline':'Closes tomorrow'}
+      ]) %}
+      <div class="list-item">
+        <div class="list-icon">▤</div>
+        <div class="list-main">
+          <div class="list-title">{{ proposal.title }}</div>
+          <div class="list-meta">{{ proposal.id }} · {{ proposal.deadline }}</div>
+        </div>
+        <span class="badge {{ proposal.tone }}">{{ proposal.status }}</span>
+      </div>
+      {% else %}
+      <div class="empty">No proposals require attention.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Governance rules</h2></div>
+    <div class="list">
+      <div class="list-item">
+        <div class="list-icon">3d</div>
+        <div class="list-main">
+          <div class="list-title">Challenge period</div>
+          <div class="list-meta">Any member can formally challenge a proposal within three days of publication.</div>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="list-icon">✓</div>
+        <div class="list-main">
+          <div class="list-title">Automatic passage</div>
+          <div class="list-meta">Unchallenged proposals pass when the deadline expires.</div>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="list-icon">2d</div>
+        <div class="list-main">
+          <div class="list-title">Discussion, then vote</div>
+          <div class="list-meta">Challenged proposals enter a two-day discussion phase before voting.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Recent discussions</h2>
+      <a class="text-link" href="/chat">Open chat</a>
+    </div>
+    {% for item in recent_messages|default([
+      {'title':'Community tool library','author':'Maya Chen','body':'I can draft a checkout and maintenance process.'},
+      {'title':'Quarterly maintenance fund','author':'Jonas Reed','body':'We should clarify which repairs qualify.'}
+    ]) %}
+    <div class="list-item">
+      <div class="list-icon">▱</div>
+      <div class="list-main">
+        <div class="list-title">{{ item.title }}</div>
+        <div class="list-meta">{{ item.author }}</div>
+        <p style="margin-top:6px">{{ item.body }}</p>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">No recent discussions.</div>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Treasury snapshot</h2>
+      <a class="text-link" href="/treasury">View treasury</a>
+    </div>
+    <div class="stat-label">Available balance</div>
+    <div class="stat-value">{{ treasury_balance|default('€12,480') }}</div>
+    <p class="muted" style="margin-top:6px;font-size:12px">Replace sample figures with live treasury data.</p>
+    <div style="margin-top:22px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span class="muted">Monthly budget used</span>
+        <strong>{{ budget_used|default('52%') }}</strong>
+      </div>
+      <div class="progress"><span style="width:52%"></span></div>
+    </div>
+    <div style="margin-top:20px">
+      <a class="button" href="/treasury#transactions">Review transactions</a>
+    </div>
+  </section>
+</div>
+{% endblock %}
+EOF

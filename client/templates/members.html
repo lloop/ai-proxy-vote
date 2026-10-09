@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set active_page = "members" %}
+{% block title %}Members{% endblock %}
+{% block breadcrumb %}Members{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Members</h1><p class="subtitle">Manage membership and see who participates in collective decisions.</p></div><a class="button primary" href="#invite-member">＋ Invite member</a></div>
+<div class="grid stats">
+  <div class="card"><div class="stat-label">Total members</div><div class="stat-value">{{ total_members|default(28) }}</div><div class="stat-foot">All membership records</div></div>
+  <div class="card"><div class="stat-label">Active members</div><div class="stat-value">{{ active_members|default(25) }}</div><div class="stat-foot">Currently active</div></div>
+  <div class="card"><div class="stat-label">Pending invitations</div><div class="stat-value">{{ pending_invites|default(3) }}</div><div class="stat-foot">Awaiting response</div></div>
+  <div class="card"><div class="stat-label">Eligible to vote</div><div class="stat-value">{{ eligible_voters|default(25) }}</div><div class="stat-foot">Based on current membership data</div></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Member directory</h2><form method="get" action="/members" style="display:flex;gap:8px"><input aria-label="Search members" name="q" value="{{ request.args.get('q','') if request is defined else '' }}" placeholder="Search members…" style="width:190px;padding:8px 10px"><button class="button" type="submit">Search</button></form></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Member</th><th>Role</th><th>Status</th><th>Voting eligibility</th><th>Joined</th></tr></thead>
+    <tbody>
+    {% for member in members|default([
+      {'name':'Maya Chen','email':'maya@example.org','initials':'MC','role':'Member','status':'Active','eligible':true,'joined':'Mar 12, 2026'},
+      {'name':'Jonas Reed','email':'jonas@example.org','initials':'JR','role':'Member','status':'Active','eligible':true,'joined':'Mar 18, 2026'},
+      {'name':'Amira Khan','email':'amira@example.org','initials':'AK','role':'Treasury steward','status':'Active','eligible':true,'joined':'Apr 02, 2026'},
+      {'name':'Luis Martín','email':'luis@example.org','initials':'LM','role':'Member','status':'Invited','eligible':false,'joined':'—'},
+      {'name':'Elena Rossi','email':'elena@example.org','initials':'ER','role':'Member','status':'Active','eligible':true,'joined':'Jun 21, 2026'}
+    ]) %}
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px"><span class="avatar">{{ member.initials }}</span><div><div class="primary-cell">{{ member.name }}</div><div class="secondary">{{ member.email }}</div></div></div></td>
+      <td>{{ member.role }}</td>
+      <td><span class="badge {% if member.status == 'Active' %}green{% elif member.status == 'Invited' %}amber{% endif %}">{{ member.status }}</span></td>
+      <td>{% if member.eligible %}<span class="badge green">Eligible</span>{% else %}<span class="badge">Not yet</span>{% endif %}</td>
+      <td class="muted">{{ member.joined }}</td>
+    </tr>
+    {% else %}<tr><td colspan="5"><div class="empty">No members match this search.</div></td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+<div class="grid two-col" style="margin-top:18px">
+  <div class="card"><div class="card-head"><h2>Membership roles</h2></div><div class="list">
+    <div class="list-item"><div class="list-icon">M</div><div class="list-main"><div class="list-title">Member</div><div class="list-meta">Participates in discussions, challenges, and votes when eligible.</div></div></div>
+    <div class="list-item"><div class="list-icon">T</div><div class="list-main"><div class="list-title">Treasury steward</div><div class="list-meta">Additional treasury responsibilities. Exact permissions should be enforced by the backend.</div></div></div>
+    <div class="list-item"><div class="list-icon">A</div><div class="list-main"><div class="list-title">Administrator</div><div class="list-meta">Membership and system administration; should not automatically imply extra voting weight.</div></div></div>
+  </div></div>
+  <div class="card" id="invite-member"><div class="card-head"><h2>Invite a member</h2></div>
+    <form class="form-grid" method="post" action="/members/invite">
+      <div class="field"><label for="member-name">Name</label><input id="member-name" name="name" placeholder="Full name" required></div>
+      <div class="field"><label for="member-email">Email address</label><input id="member-email" name="email" type="email" placeholder="member@example.org" required></div>
+      <div class="field"><label for="member-role">Role</label><select id="member-role" name="role"><option value="member">Member</option><option value="treasury_steward">Treasury steward</option></select></div>
+      <button class="button primary" type="submit">Send invitation</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
