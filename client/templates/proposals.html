@@ -25,13 +25,16 @@
         {'id':'P-022','title':'Update member onboarding','summary':'Clarify membership and voting process','author':'Amira Khan','status':'Passed automatically','tone':'green','deadline':'Passed Oct 7','activity':'2 comments'},
         {'id':'P-021','title':'Shared workspace schedule','summary':'Introduce a rotating booking calendar','author':'Luis Martín','status':'Voting','tone':'blue','deadline':'Closes tomorrow','activity':'12 votes'}
       ]) %}
-        <tr>
-          <td><div class="primary-cell">{{ proposal.title }}</div><div class="secondary">{{ proposal.id }} · {{ proposal.summary }}</div></td>
-          <td>{{ proposal.author }}</td>
-          <td><span class="badge {{ proposal.tone }}">{{ proposal.status }}</span></td>
-          <td>{{ proposal.deadline }}</td>
-          <td class="muted">{{ proposal.activity }}</td>
-        </tr>
+      <tr>
+        <td>
+          <div class="primary-cell">{{ proposal.title }}</div>
+          <div class="secondary">#{{ proposal.id }} · {{ proposal.description[:50] }}...</div>
+        </td>
+        <td>{{ proposal.creator_name or 'Unknown' }}</td>
+        <td><span class="badge blue">{{ proposal.status|title }}</span></td>
+        <td>Closes: {{ proposal.closes_at }}</td>
+        <td class="muted">0 comments</td>
+      </tr>
       {% else %}
         <tr><td colspan="5"><div class="empty">No proposals yet. Create the first proposal to begin.</div></td></tr>
       {% endfor %}

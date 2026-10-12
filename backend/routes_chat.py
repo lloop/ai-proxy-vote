@@ -1,7 +1,12 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, session
 from database.db import get_db_connection
 
 chat_bp = Blueprint('chat_bp', __name__)
+
+@chat_bp.route('/chat', methods=['GET'])
+def chat_page():  
+    """Renders the main chat interface HTML template."""
+    return render_template('chat.html') 
 
 @chat_bp.route('/api/chat', methods=['GET'])
 def get_chat_messages():
@@ -19,12 +24,17 @@ def get_chat_messages():
 @chat_bp.route('/api/chat', methods=['POST'])
 def post_chat_message():
     """Sends a new chat message."""
-    data = request.get_json()
-    user_id = data.get('user_id')
-    content = data.get('content')
+    
+    user_id = session.get('user_id')
+    print("DEBUG: Received POST request to /api/chat", session.get('user_id'))
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
 
-    if not user_id or not content:
-        return jsonify({"error": "Missing user_id or content"}), 400
+    data = request.get_json()
+    content = data.get('content') if data else None
+
+    if not content:
+        return jsonify({"error": "Missing content"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()

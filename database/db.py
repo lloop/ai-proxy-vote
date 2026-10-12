@@ -9,6 +9,7 @@ def get_db_connection():
     conn = sqlite3.connect(db_path)
     # Enable dictionary-like access to rows
     conn.row_factory = sqlite3.Row
+    
     return conn
 
 def init_db():

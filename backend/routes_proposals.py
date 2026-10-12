@@ -1,31 +1,62 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session, redirect, url_for, render_template
 from database.db import get_db_connection
+from datetime import datetime, timedelta
 
 proposals_bp = Blueprint('proposals_bp', __name__)
 
-@proposals_bp.route('/api/proposals', methods=['GET'])
+@proposals_bp.route('/proposals', methods=['GET', 'POST'])
 def get_proposals():
-    """Fetches all community proposals."""
+    if request.method == 'POST':
+        user_id = session.get('user_id')
+        if not user_id:
+            return redirect(url_for('auth_bp.login'))
+
+        title = request.form.get('title')
+        description = request.form.get('body')  # Matches textarea name 'body'
+        closes_at = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
+
+        if title and description:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO proposals (title, description, creator_id, closes_at) 
+                   VALUES (?, ?, ?, ?)""",
+                (title, description, user_id, closes_at)
+            )
+            conn.commit()
+            conn.close()
+
+        # Redirect back to the GET view so it renders the HTML page
+        return redirect(url_for('proposals_bp.get_proposals'))
+
+    # GET request: fetch proposals from DB and render the HTML template
     conn = get_db_connection()
-    proposals = conn.execute(
-        """SELECT p.*, u.username as creator_name 
-           FROM proposals p 
-           JOIN users u ON p.creator_id = u.id 
-           ORDER BY p.created_at DESC"""
-    ).fetchall()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, u.username as creator_name 
+        FROM proposals p 
+        LEFT JOIN users u ON p.creator_id = u.id 
+        ORDER BY p.created_at DESC
+    """)
+    proposals = cursor.fetchall()
     conn.close()
-    return jsonify([dict(row) for row in proposals]), 200
+
+    return render_template('proposals.html', proposals=proposals)
 
 @proposals_bp.route('/api/proposals', methods=['POST'])
 def create_proposal():
     """Creates a new governance proposal or spending request."""
+    # Enforce session-based user attribution instead of client payload
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     data = request.get_json()
     title = data.get('title')
     description = data.get('description')
-    creator_id = data.get('creator_id')
     closes_at = data.get('closes_at')
 
-    if not all([title, description, creator_id, closes_at]):
+    if not all([title, description, closes_at]):
         return jsonify({"error": "Missing required fields"}), 400
 
     conn = get_db_connection()
@@ -33,13 +64,39 @@ def create_proposal():
     cursor.execute(
         """INSERT INTO proposals (title, description, creator_id, closes_at) 
            VALUES (?, ?, ?, ?)""",
-        (title, description, creator_id, closes_at)
+        (title, description, user_id, closes_at)
     )
     conn.commit()
     proposal_id = cursor.lastrowid
     conn.close()
 
     return jsonify({"message": "Proposal created successfully", "id": proposal_id}), 201
+
+@proposals_bp.route('/proposals', methods=['POST'])
+def submit_proposal_form():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth_bp.login'))
+
+    title = request.form.get('title')
+    description = request.form.get('body') # Note: your textarea name is 'body'
+    
+    # Calculate or set a default closes_at date (e.g., 3 days from now)
+    from datetime import datetime, timedelta
+    closes_at = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
+
+    if title and description:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO proposals (title, description, creator_id, closes_at) 
+               VALUES (?, ?, ?, ?)""",
+            (title, description, user_id, closes_at)
+        )
+        conn.commit()
+        conn.close()
+
+    return redirect(url_for('proposals_bp.get_proposals'))
 
 @proposals_bp.route('/api/proposals/<int:proposal_id>/vote', methods=['POST'])
 def cast_vote(proposal_id):

@@ -1,52 +1,98 @@
 {% extends "base.html" %}
-{% set active_page = "treasury" %}
-{% block title %}Treasury{% endblock %}
-{% block breadcrumb %}Treasury{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div><h1>Treasury</h1><p class="subtitle">A transparent overview of shared funds, incoming contributions, and approved spending.</p></div>
-  <a class="button primary" href="#record-transaction">＋ Record transaction</a>
-</div>
-<div class="grid stats">
-  <div class="card"><div class="stat-label">Available balance</div><div class="stat-value money">{{ balance|default('€12,480') }}</div><div class="stat-foot">Current recorded funds</div></div>
-  <div class="card"><div class="stat-label">Income this month</div><div class="stat-value money">{{ monthly_income|default('€2,150') }}</div><div class="stat-foot">Contributions and other income</div></div>
-  <div class="card"><div class="stat-label">Expenses this month</div><div class="stat-value money">{{ monthly_expenses|default('€860') }}</div><div class="stat-foot">Recorded outgoings</div></div>
-  <div class="card"><div class="stat-label">Pending requests</div><div class="stat-value">{{ pending_requests|default(2) }}</div><div class="stat-foot">Awaiting governance decision</div></div>
-</div>
-<div class="grid two-col">
-  <div class="card">
-    <div class="card-head"><h2>Recent transactions</h2><a class="text-link" href="#transactions">View ledger</a></div>
-    <div class="table-wrap" id="transactions"><table>
-      <thead><tr><th>Transaction</th><th>Date</th><th>Category</th><th>Amount</th></tr></thead>
-      <tbody>
-      {% for transaction in transactions|default([
-        {'title':'Member contributions','date':'Oct 08, 2026','category':'Income','amount':'+€450','tone':'green'},
-        {'title':'Workshop supplies','date':'Oct 06, 2026','category':'Materials','amount':'−€185','tone':''},
-        {'title':'Monthly contributions','date':'Oct 01, 2026','category':'Income','amount':'+€1,700','tone':'green'},
-        {'title':'Tool repair','date':'Sep 28, 2026','category':'Maintenance','amount':'−€240','tone':''}
-      ]) %}
-      <tr><td><div class="primary-cell">{{ transaction.title }}</div></td><td class="muted">{{ transaction.date }}</td><td><span class="badge">{{ transaction.category }}</span></td><td class="money {% if transaction.tone == 'green' %}text-link{% endif %}">{{ transaction.amount }}</td></tr>
-      {% else %}<tr><td colspan="4"><div class="empty">No transactions have been recorded.</div></td></tr>{% endfor %}
-      </tbody>
-    </table></div>
-  </div>
-  <div class="card">
-    <div class="card-head"><h2>Monthly budget</h2><span class="badge blue">Illustrative</span></div>
-    <div class="list">
-      <div class="list-item"><div class="list-main"><div style="display:flex;justify-content:space-between;gap:12px"><strong>Maintenance</strong><span class="money">€420 / €800</span></div><div class="progress" style="margin-top:9px"><span style="width:52.5%"></span></div></div></div>
-      <div class="list-item"><div class="list-main"><div style="display:flex;justify-content:space-between;gap:12px"><strong>Community supplies</strong><span class="money">€260 / €500</span></div><div class="progress" style="margin-top:9px"><span style="width:52%"></span></div></div></div>
-      <div class="list-item"><div class="list-main"><div style="display:flex;justify-content:space-between;gap:12px"><strong>Events</strong><span class="money">€180 / €400</span></div><div class="progress" style="margin-top:9px"><span style="width:45%"></span></div></div></div>
+<div class="container">
+    <h2>Community Treasury & Mock Bank Accounts</h2>
+    
+    <!-- Overall Balance Card -->
+    <div class="card my-4 p-3 bg-light">
+        <h4>Total Treasury Balance</h4>
+        <h2 id="total-balance" class="text-success">$0.00</h2>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:18px">Example figures only. Replace with ledger-backed values before relying on this page.</p>
-  </div>
+
+    <!-- Mock Bank Accounts Section -->
+    <div class="row my-4">
+        <div class="col-md-12">
+            <h3>Connected Accounts</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Account Name</th>
+                        <th>Account Number</th>
+                        <th>Currency</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody id="accounts-table-body">
+                    <!-- Populated dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Transaction Logs Section -->
+    <div class="row my-4">
+        <div class="col-md-12">
+            <h3>Recent Transactions</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <!-- Populated dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-<div class="card" id="record-transaction" style="margin-top:18px">
-  <div class="card-head"><h2>Record transaction</h2></div>
-  <form class="form-grid" method="post" action="/treasury/transactions" style="grid-template-columns:repeat(4,minmax(0,1fr));align-items:end">
-    <div class="field"><label for="tx-description">Description</label><input id="tx-description" name="description" placeholder="Transaction description" required></div>
-    <div class="field"><label for="tx-amount">Amount (€)</label><input id="tx-amount" name="amount" type="number" step="0.01" placeholder="0.00" required></div>
-    <div class="field"><label for="tx-type">Type</label><select id="tx-type" name="type"><option value="income">Income</option><option value="expense">Expense</option></select></div>
-    <button class="button primary" type="submit">Record</button>
-  </form>
-</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetch('/api/treasury')
+        .then(response => response.json())
+        .then(data => {
+            // Set total balance
+            document.getElementById('total-balance').textContent = `$${parseFloat(data.balance).toFixed(2)}`;
+
+            // Populate transaction logs
+            const logsBody = document.getElementById('logs-table-body');
+            logsBody.innerHTML = '';
+            data.logs.forEach(log => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${log.created_at}</td>
+                    <td>${log.account_name} (${log.account_number})</td>
+                    <td class="text-capitalize">${log.transaction_type}</td>
+                    <td class="${log.transaction_type === 'deposit' ? 'text-success' : 'text-danger'}">
+                        ${log.transaction_type === 'deposit' ? '+' : '-'}$${parseFloat(log.amount).toFixed(2)}
+                    </td>
+                    <td>${log.description || ''}</td>
+                `;
+                logsBody.appendChild(row);
+            });
+        });
+
+    fetch('/api/treasury/accounts')
+        .then(response => response.json())
+        .then(data => {
+            const accountsBody = document.getElementById('accounts-table-body');
+            accountsBody.innerHTML = '';
+            data.accounts.forEach(account => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${account.account_name}</td>
+                    <td>${account.account_number}</td>
+                    <td>${account.currency}</td>
+                    <td>$${parseFloat(account.balance).toFixed(2)}</td>
+                `;
+                accountsBody.appendChild(row);
+            });
+        });
+});
+</script>
 {% endblock %}

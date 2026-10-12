@@ -13,12 +13,19 @@
       <a class="brand" href="{{ url_for('index') if false else '#' }}">Co-so-sys<small>Member governance</small></a>
       <div>
         <div class="nav-label">Workspace</div>
-        <nav class="nav" aria-label="Main navigation">
-          <a href="/" class="{% if active_page|default('') == 'overview' %}active{% endif %}"><span class="nav-icon">◫</span><span class="nav-text">Overview</span></a>
-          <a href="/proposals" class="{% if active_page|default('') == 'proposals' %}active{% endif %}"><span class="nav-icon">▤</span><span class="nav-text">Proposals</span></a>
-          <a href="/treasury" class="{% if active_page|default('') == 'treasury' %}active{% endif %}"><span class="nav-icon">◈</span><span class="nav-text">Treasury</span></a>
-          <a href="/chat" class="{% if active_page|default('') == 'chat' %}active{% endif %}"><span class="nav-icon">▱</span><span class="nav-text">Chat</span></a>
-          <a href="/members" class="{% if active_page|default('') == 'members' %}active{% endif %}"><span class="nav-icon">♙</span><span class="nav-text">Members</span></a>
+        <nav class="nav-links">
+          <a href="{{ url_for('proposals_page') }}" class="nav {% if active_page == 'proposals' %}active{% endif %}">Proposals</a>
+          <a href="{{ url_for('members_page') }}" class="nav {% if active_page == 'members' %}active{% endif %}">Members</a>
+          <a href="{{ url_for('treasury_page') }}" class="nav {% if active_page == 'treasury' %}active{% endif %}">Treasury</a>
+          <a href="{{ url_for('chat_page') }}" class="nav {% if active_page == 'chat' %}active{% endif %}">Chat</a>
+          <a href="{{ url_for('events_bp.index') }}" class="nav {% if active_page == 'events' %}active{% endif %}">Events</a>
+
+          {% if session.get('user_id') %}
+            <span class="muted" style="margin-left: auto; align-self: center;">Logged in as <strong>{{ session.get('username', 'Member') }}</strong></span>
+            <a href="{{ url_for('auth_bp.logout') }}" class="nav" >Logout</a>
+          {% else %}
+            <a href="{{ url_for('auth_bp.login') }}" class="nav {% if active_page == 'login' %}active{% endif %}" style="margin-left: auto;">Login</a>
+          {% endif %}
         </nav>
       </div>
       <div class="sidebar-note">Transparent decisions.<br>Shared responsibility.</div>
