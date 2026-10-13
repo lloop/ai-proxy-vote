@@ -12,9 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Seed initial test users
--- INSERT OR IGNORE INTO users (username, password, role) VALUES 
--- ('organizer_alex', 'password123', 'organizer'),
--- ('member_sam', 'password123', 'general');
+INSERT OR IGNORE INTO users (username, password, email, role, status, eligible_to_vote) VALUES 
+('lloop', 'password123', 'lloop#lloop.com', 'organizer', 'Active', 1),
+('lloop_2', 'password123', 'lloop2#lloop.com', 'member', 'Active', 1),
+('lloop_3', 'password123', 'lloop3#lloop.com', 'member', 'Active', 1);
 
 -- 2. PROPOSALS TABLE
 -- Stores community governance issues and spending requests.
@@ -28,6 +29,10 @@ CREATE TABLE IF NOT EXISTS proposals (
     closes_at TIMESTAMP NOT NULL,
     FOREIGN KEY (creator_id) REFERENCES users(id)
 );
+
+-- Seed initial proposals
+INSERT OR IGNORE INTO proposals (id, title, description, creator_id, status, closes_at) VALUES 
+(1, 'new prop', 'a brand new one', 1, 'active', datetime('now', '+3 days'));
 
 -- 3. VOTES TABLE
 -- Ensures each user can cast only one vote per proposal.
@@ -60,9 +65,11 @@ CREATE TABLE IF NOT EXISTS treasury_logs (
 CREATE TABLE IF NOT EXISTS chat_messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
+    proposal_id TEXT,
     content TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (proposal_id) REFERENCES proposals(id)
 );
 
 -- 6. PARTICIPATION LOGS TABLE

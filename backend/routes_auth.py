@@ -11,15 +11,21 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        
+        print(f"Attempting login for: '{username}'") 
 
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
         user = cursor.fetchone()
         conn.close()
+        
+        print(f"DEBUG: Found user row: {dict(user) if user else 'None'}")
+        print(f"DEBUG: Input password: '{password}'")
+        print(f"DEBUG: DB password: '{user['password'] if user else 'N/A'}'")
 
         # Simple password check (assuming plain text or hashed based on your DB setup)
-        if user and check_password_hash(user['password'], password):
+        if user and user['password'] == password:
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']

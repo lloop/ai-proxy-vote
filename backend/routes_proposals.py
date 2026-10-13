@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session, redirect, url_for, render_template
 from database.db import get_db_connection
 from datetime import datetime, timedelta
+import sqlite3
 
 proposals_bp = Blueprint('proposals_bp', __name__)
 
@@ -32,16 +33,38 @@ def get_proposals():
     # GET request: fetch proposals from DB and render the HTML template
     conn = get_db_connection()
     cursor = conn.cursor()
+    
     cursor.execute("""
-        SELECT p.*, u.username as creator_name 
+        SELECT p.*, u.username as creator_name,
+                  (SELECT COUNT(*) FROM chat_messages m WHERE m.proposal_id = p.id) as comment_count
         FROM proposals p 
         LEFT JOIN users u ON p.creator_id = u.id 
         ORDER BY p.created_at DESC
     """)
     proposals = cursor.fetchall()
+    
+    open_count = cursor.execute(
+        "SELECT COUNT(*) as count FROM proposals WHERE status IN ('Challenge period', 'Discussion', 'Voting')"
+    ).fetchone()['count']
+    
+    discussion_count = cursor.execute(
+        "SELECT COUNT(*) as count FROM proposals WHERE status = 'Discussion'"
+    ).fetchone()['count']
+    
+    passed_count = cursor.execute(
+        "SELECT COUNT(*) as count FROM proposals WHERE status = 'Passed automatically'"
+    ).fetchone()['count']
+
     conn.close()
 
-    return render_template('proposals.html', proposals=proposals)
+    return render_template(
+        'proposals.html',
+        proposals=proposals,
+        open_count=open_count,
+        discussion_count=discussion_count,
+        passed_count=passed_count,
+        active_page='proposals'
+    )
 
 @proposals_bp.route('/api/proposals', methods=['POST'])
 def create_proposal():
@@ -82,7 +105,6 @@ def submit_proposal_form():
     description = request.form.get('body') # Note: your textarea name is 'body'
     
     # Calculate or set a default closes_at date (e.g., 3 days from now)
-    from datetime import datetime, timedelta
     closes_at = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')
 
     if title and description:
@@ -155,3 +177,61 @@ def organizer_veto(proposal_id):
     conn.close()
 
     return jsonify({"message": "Proposal rejected via organizer safety veto"}), 200
+
+@proposals_bp.route('/proposals/<proposal_id>', methods=['GET'])
+def proposal_detail(proposal_id):
+    """Displays detailed information about a proposal and its dedicated discussion thread."""
+    conn = get_db_connection()
+    
+    # Fetch proposal details
+    proposal = conn.execute(
+        """SELECT p.*, u.username as author_name 
+           FROM proposals p 
+           LEFT JOIN users u ON p.creator_id = u.id 
+           WHERE p.id = ?""",
+        (proposal_id,)
+    ).fetchone()
+    
+    if not proposal:
+        conn.close()
+        return "Proposal not found", 404
+
+    # Fetch messages tied specifically to this proposal
+    messages = conn.execute(
+        """SELECT m.*, u.username 
+           FROM chat_messages m 
+           JOIN users u ON m.user_id = u.id 
+           WHERE m.proposal_id = ? 
+           ORDER BY m.timestamp ASC""",
+        (proposal_id,)
+    ).fetchall()
+    
+    conn.close()
+    
+    return render_template(
+        'proposal_detail.html',
+        proposal=proposal,
+        messages=messages,
+        active_page='proposals'
+    )
+    
+@proposals_bp.route('/proposals/<int:proposal_id>/comment', methods=['POST'])
+def add_proposal_comment(proposal_id):
+    """Handles posting a comment/chat message specific to a proposal."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('auth_bp.login'))
+
+    content = request.form.get('content')
+    if content:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """INSERT INTO chat_messages (user_id, proposal_id, content) 
+               VALUES (?, ?, ?)""",
+            (user_id, proposal_id, content)
+        )
+        conn.commit()
+        conn.close()
+
+    return redirect(url_for('proposals_bp.proposal_detail', proposal_id=proposal_id))

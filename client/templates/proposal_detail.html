@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% set active_page = "proposals" %}
+{% block title %}{{ proposal.title }}{% endblock %}
+{% block breadcrumb %}Proposal #{{ proposal.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ proposal.title }}</h1>
+    <p class="subtitle">Proposed by <strong>{{ proposal.creator_name }}</strong> on {{ proposal.created_at }}</p>
+  </div>
+  <div>
+    <span class="badge blue">{{ proposal.status|title }}</span>
+  </div>
+</div>
+
+<div class="grid two-col" style="align-items: start;">
+  <!-- Proposal Details Card -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Proposal description</h2>
+      <span class="muted">#{{ proposal.id }}</span>
+    </div>
+    <div style="margin-bottom: 20px; white-space: pre-wrap; line-height: 1.6;">
+      {{ proposal.description }}
+    </div>
+    <div class="list" style="border-top: 1px solid var(--border-color, #eee); padding-top: 12px;">
+      <div class="list-item">
+        <div class="list-main">
+          <div class="list-title">Closing / Deadline</div>
+          <div class="list-meta">{{ proposal.closes_at }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proposal Real-Time Chat Window -->
+  <div class="card" style="display: flex; flex-direction: column; height: 500px;">
+    <div class="card-head">
+      <h2>Proposal Discussion</h2>
+      <span class="badge blue" id="message-count">{{ messages|length }} messages</span>
+    </div>
+
+    <!-- Chat Message Window Box -->
+    <div id="chat-window" style="flex: 1; overflow-y: auto; padding: 12px; background: var(--bg-surface, #f9f9f9); border: 1px solid var(--border-color, #eee); border-radius: 6px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+      {% for msg in messages %}
+        <div style="padding: 8px 12px; background: white; border: 1px solid var(--border-color, #e5e5e5); border-radius: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12px;">
+            <strong style="color: var(--primary-color, #333);">{{ msg.username }}</strong>
+            <span class="muted" style="font-size: 10px;">{{ msg.timestamp }}</span>
+          </div>
+          <div style="font-size: 14px; white-space: pre-wrap; color: #222;">{{ msg.content }}</div>
+        </div>
+      {% else %}
+        <div id="empty-chat" class="empty" style="text-align: center; margin: auto; color: #888;">No messages in this proposal chat yet. Start the conversation below.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="proposal-chat-form" style="display: flex; gap: 8px;">
+      <input type="text" id="chat-input" placeholder="Type a message for this proposal..." required style="flex: 1; padding: 10px; border: 1px solid var(--border-color, #ccc); border-radius: 4px;">
+      <button type="submit" class="button primary" style="white-space: nowrap;">Send</button>
+    </form>
+  </div>
+</div>
+
+<div style="margin-top: 18px;">
+  <a class="text-link" href="{{ url_for('proposals_bp.get_proposals') }}">← Back to all proposals</a>
+</div>
+
+<!-- Include Socket.IO client library if not already in base.html -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  const proposalId = {{ proposal.id }};
+  const socket = io();
+  const chatWindow = document.getElementById('chat-window');
+  const chatForm = document.getElementById('proposal-chat-form');
+  const chatInput = document.getElementById('chat-input');
+  const emptyChat = document.getElementById('empty-chat');
+
+  // Join proposal-specific room
+  socket.emit('join_proposal', { proposal_id: proposalId });
+
+  // Scroll to bottom on load
+  if (chatWindow) {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  // Handle sending message via Socket.IO
+  chatForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const content = chatInput.value.trim();
+    if (!content) return;
+
+    socket.emit('proposal_message', {
+      proposal_id: proposalId,
+      content: content
+    });
+
+    chatInput.value = '';
+  });
+
+  // Listen for incoming messages in this proposal room
+  socket.on('new_proposal_message', function(data) {
+    if (emptyChat) {
+      emptyChat.remove();
+    }
+
+    const msgDiv = document.createElement('div');
+    msgDiv.style.cssText = "padding: 8px 12px; background: white; border: 1px solid var(--border-color, #e5e5e5); border-radius: 4px;";
+    msgDiv.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12px;">
+        <strong style="color: var(--primary-color, #333);">${data.username}</strong>
+        <span class="muted" style="font-size: 10px;">${data.timestamp}</span>
+      </div>
+      <div style="font-size: 14px; white-space: pre-wrap; color: #222;">${data.content}</div>
+    `;
+
+    chatWindow.appendChild(msgDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  });
+</script>
+{% endblock %}
