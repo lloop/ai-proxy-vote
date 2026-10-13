@@ -6,7 +6,7 @@
     <!-- Overall Balance Card -->
     <div class="card my-4 p-3 bg-light">
         <h4>Total Treasury Balance</h4>
-        <h2 id="total-balance" class="text-success">$0.00</h2>
+        <h2 id="total-balance" class="text-success">€0.00</h2>
     </div>
 
     <!-- Mock Bank Accounts Section -->
@@ -37,7 +37,7 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Account</th>
+                        <th>Recorded By</th>
                         <th>Type</th>
                         <th>Amount</th>
                         <th>Description</th>
@@ -53,45 +53,78 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    fetch('/api/treasury')
-        .then(response => response.json())
-        .then(data => {
-            // Set total balance
-            document.getElementById('total-balance').textContent = `$${parseFloat(data.balance).toFixed(2)}`;
+    const logsBody = document.getElementById('logs-table-body');
+    const accountsBody = document.getElementById('accounts-table-body');
+    const formatEuro = amount => new Intl.NumberFormat('en-IE', {
+        style: 'currency',
+        currency: 'EUR'
+    }).format(Number(amount));
 
-            // Populate transaction logs
-            const logsBody = document.getElementById('logs-table-body');
+    fetch('/api/treasury/ledger')
+        .then(response => {
+            if (!response.ok) throw new Error('Could not load treasury transactions.');
+            return response.json();
+        })
+        .then(data => {
             logsBody.innerHTML = '';
+            document.getElementById('total-balance').textContent = formatEuro(data.balance);
+
+            if (!data.logs.length) {
+                logsBody.innerHTML = '<tr><td colspan="5">No treasury transactions recorded yet.</td></tr>';
+                return;
+            }
+
             data.logs.forEach(log => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${log.created_at}</td>
-                    <td>${log.account_name} (${log.account_number})</td>
-                    <td class="text-capitalize">${log.transaction_type}</td>
-                    <td class="${log.transaction_type === 'deposit' ? 'text-success' : 'text-danger'}">
-                        ${log.transaction_type === 'deposit' ? '+' : '-'}$${parseFloat(log.amount).toFixed(2)}
-                    </td>
-                    <td>${log.description || ''}</td>
-                `;
+                const values = [
+                    log.created_at,
+                    log.logged_by,
+                    log.transaction_type,
+                    `${log.transaction_type === 'contribution' ? '+' : '-'}${formatEuro(log.amount)}`,
+                    log.description || ''
+                ];
+                values.forEach((value, index) => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value;
+                    if (index === 2) cell.classList.add('text-capitalize');
+                    if (index === 3) {
+                        cell.classList.add(log.transaction_type === 'contribution' ? 'text-success' : 'text-danger');
+                    }
+                    row.appendChild(cell);
+                });
                 logsBody.appendChild(row);
             });
+        })
+        .catch(error => {
+            logsBody.innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`;
         });
 
     fetch('/api/treasury/accounts')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Could not load mock bank accounts.');
+            return response.json();
+        })
         .then(data => {
-            const accountsBody = document.getElementById('accounts-table-body');
             accountsBody.innerHTML = '';
+            if (!data.accounts.length) {
+                accountsBody.innerHTML = '<tr><td colspan="4">No mock bank accounts connected.</td></tr>';
+                return;
+            }
+
             data.accounts.forEach(account => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${account.account_name}</td>
-                    <td>${account.account_number}</td>
-                    <td>${account.currency}</td>
-                    <td>$${parseFloat(account.balance).toFixed(2)}</td>
-                `;
+                [account.account_name, account.account_number, account.currency,
+                    `${account.currency} ${Number(account.balance).toFixed(2)}`]
+                    .forEach(value => {
+                        const cell = document.createElement('td');
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
                 accountsBody.appendChild(row);
             });
+        })
+        .catch(error => {
+            accountsBody.innerHTML = `<tr><td colspan="4">${error.message}</td></tr>`;
         });
 });
 </script>

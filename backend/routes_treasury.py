@@ -5,19 +5,49 @@ treasury_bp = Blueprint('treasury_bp', __name__)
 
 @treasury_bp.route('/api/treasury', methods=['GET'])
 def get_treasury_logs():
-    """Fetches all mock bank transactions across accounts, plus calculates the overall treasury balance."""
+    """Fetches all mock bank transactions and the combined account balance."""
     conn = get_db_connection()
     
     logs = conn.execute(
         """SELECT t.*, b.account_name, b.account_number 
-           FROM mock_bank_transactions t 
-           JOIN mock_bank_accounts b ON t.account_id = b.id 
+           FROM mock_bank_transactions t
+           JOIN mock_bank_accounts b ON t.account_id = b.id
            ORDER BY t.created_at DESC"""
     ).fetchall()
-    
-    # Calculate total balance across all mock bank accounts
+
     balance = conn.execute(
-        """SELECT COALESCE(SUM(balance), 0) as balance FROM mock_bank_accounts"""
+        """SELECT COALESCE(SUM(balance), 0) AS balance FROM mock_bank_accounts"""
+    ).fetchone()
+
+    conn.close()
+    
+    return jsonify({
+        "balance": balance['balance'],
+        "logs": [dict(row) for row in logs]
+    }), 200
+
+@treasury_bp.route('/api/treasury/ledger', methods=['GET'])
+def get_treasury_ledger():
+    """Fetches treasury ledger entries and calculates the current ledger balance."""
+    conn = get_db_connection()
+
+    logs = conn.execute(
+        """SELECT t.id, t.transaction_type, t.amount, t.description,
+                  t.timestamp AS created_at, COALESCE(u.username, 'Unknown') AS logged_by
+           FROM treasury_logs t
+           LEFT JOIN users u ON t.logged_by = u.id
+           ORDER BY t.timestamp DESC"""
+    ).fetchall()
+
+    balance = conn.execute(
+        """SELECT COALESCE(SUM(
+                   CASE transaction_type
+                       WHEN 'contribution' THEN amount
+                       WHEN 'expense' THEN -amount
+                       ELSE 0
+                   END
+               ), 0) AS balance
+           FROM treasury_logs"""
     ).fetchone()
     
     conn.close()

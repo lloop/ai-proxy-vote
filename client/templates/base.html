@@ -13,19 +13,23 @@
       <a class="brand" href="{{ url_for('index') }}">Co-so-sys<small>Member governance</small></a>
       <div>
         <div class="nav-label">Workspace</div>
-        <nav class="nav-links">
-          <a href="{{ url_for('proposals_page') }}" class="nav {% if active_page == 'proposals' %}active{% endif %}">Proposals</a>
-          <a href="{{ url_for('members_page') }}" class="nav {% if active_page == 'members' %}active{% endif %}">Members</a>
-          <a href="{{ url_for('treasury_page') }}" class="nav {% if active_page == 'treasury' %}active{% endif %}">Treasury</a>
-          <a href="{{ url_for('chat_page') }}" class="nav {% if active_page == 'chat' %}active{% endif %}">Chat</a>
-          <a href="{{ url_for('events_bp.index') }}" class="nav {% if active_page == 'events' %}active{% endif %}">Events</a>
+        <nav class="nav-links" style="display: flex; flex-direction: column; height: 100%;">
+          <div class="nav-group">
+            <a href="{{ url_for('proposals_page') }}" class="nav {% if active_page == 'proposals' %}active{% endif %}">Proposals</a>
+            <a href="{{ url_for('members_page') }}" class="nav {% if active_page == 'members' %}active{% endif %}">Members</a>
+            <a href="{{ url_for('treasury_page') }}" class="nav {% if active_page == 'treasury' %}active{% endif %}">Treasury</a>
+            <a href="{{ url_for('chat_page') }}" class="nav {% if active_page == 'chat' %}active{% endif %}">Chat</a>
+            <a href="{{ url_for('events_bp.index') }}" class="nav {% if active_page == 'events' %}active{% endif %}">Events</a>
+          </div>
 
-          {% if session.get('user_id') %}
-            <span class="muted" style="margin-left: auto; align-self: center;">Logged in as <strong>{{ session.get('username', 'Member') }}</strong></span>
-            <a href="{{ url_for('auth_bp.logout') }}" class="nav" >Logout</a>
-          {% else %}
-            <a href="{{ url_for('auth_bp.login') }}" class="nav {% if active_page == 'login' %}active{% endif %}" style="margin-left: auto;">Login</a>
-          {% endif %}
+          <div class="nav-auth" style="margin-top: auto; padding-top: 1rem;">
+            {% if session.get('user_id') %}
+              <div class="muted" style="margin-bottom: 0.5rem; font-size: 0.9em;">Logged in as <strong>{{ session.get('username', 'Member') }}</strong></div>
+              <a href="{{ url_for('auth_bp.logout') }}" class="nav">Logout</a>
+            {% else %}
+              <a href="{{ url_for('auth_bp.login') }}" class="nav {% if active_page == 'login' %}active{% endif %}">Login</a>
+            {% endif %}
+          </div>
         </nav>
       </div>
       <div class="sidebar-note">Transparent decisions.<br>Shared responsibility.</div>

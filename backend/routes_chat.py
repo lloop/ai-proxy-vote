@@ -10,14 +10,28 @@ def chat_page():
 
 @chat_bp.route('/api/chat', methods=['GET'])
 def get_chat_messages():
-    """Fetches recent community chat history."""
+    """Fetches recent community chat history, optionally filtered by proposal_id."""
+    proposal_id = request.args.get('proposal_id')
     conn = get_db_connection()
-    messages = conn.execute(
-        """SELECT c.*, u.username 
-           FROM chat_messages c 
-           JOIN users u ON c.user_id = u.id 
-           ORDER BY c.timestamp ASC LIMIT 100"""
-    ).fetchall()
+    
+    if proposal_id:
+        messages = conn.execute(
+            """SELECT c.*, u.username 
+               FROM chat_messages c 
+               JOIN users u ON c.user_id = u.id 
+               WHERE c.proposal_id = ?
+               ORDER BY c.timestamp ASC LIMIT 100""",
+            (proposal_id,)
+        ).fetchall()
+    else:
+        messages = conn.execute(
+            """SELECT c.*, u.username 
+               FROM chat_messages c 
+               JOIN users u ON c.user_id = u.id 
+               WHERE c.proposal_id IS NULL
+               ORDER BY c.timestamp ASC LIMIT 100"""
+        ).fetchall()
+        
     conn.close()
     return jsonify([dict(row) for row in messages]), 200
 

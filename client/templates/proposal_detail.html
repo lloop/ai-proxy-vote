@@ -14,20 +14,58 @@
 </div>
 
 <div class="grid two-col" style="align-items: start;">
-  <!-- Proposal Details Card -->
-  <div class="card">
-    <div class="card-head">
-      <h2>Proposal description</h2>
-      <span class="muted">#{{ proposal.id }}</span>
+  <!-- Proposal Details Card & Voting Section -->
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <div class="card">
+      <div class="card-head">
+        <h2>Proposal description</h2>
+        <span class="muted">#{{ proposal.id }}</span>
+      </div>
+      <div style="margin-bottom: 20px; white-space: pre-wrap; line-height: 1.6;">
+        {{ proposal.description }}
+      </div>
+      <div class="list" style="border-top: 1px solid var(--border-color, #eee); padding-top: 12px;">
+        <div class="list-item">
+          <div class="list-main">
+            <div class="list-title">Closing / Deadline</div>
+            <div class="list-meta">{{ proposal.closes_at }}</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div style="margin-bottom: 20px; white-space: pre-wrap; line-height: 1.6;">
-      {{ proposal.description }}
-    </div>
-    <div class="list" style="border-top: 1px solid var(--border-color, #eee); padding-top: 12px;">
-      <div class="list-item">
-        <div class="list-main">
-          <div class="list-title">Closing / Deadline</div>
-          <div class="list-meta">{{ proposal.closes_at }}</div>
+
+    <!-- Voting Card -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Cast Your Vote</h2>
+        <span class="badge">Weight-Based</span>
+      </div>
+
+      {% if proposal.status in ['Challenge period', 'Voting', 'Discussion'] %}
+        <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+          <button class="button primary" style="background-color: #2e7d32;" onclick="submitVote({{ proposal.id }}, 'yes')">Vote Yes</button>
+          <button class="button primary" style="background-color: #c62828;" onclick="submitVote({{ proposal.id }}, 'no')">Vote No</button>
+          <button class="button" style="background-color: #ef6c00; color: white;" onclick="submitVote({{ proposal.id }}, 'abstain')">Abstain</button>
+        </div>
+        <div id="vote-feedback" class="secondary" style="margin-bottom: 1rem; font-size: 13px;"></div>
+      {% else %}
+        <p class="secondary" style="margin-bottom: 1rem;">Voting is closed for this proposal.</p>
+      {% endif %}
+
+      <!-- Current Vote Tallies -->
+      <div style="border-top: 1px solid var(--border-color, #eee); padding-top: 12px;">
+        <div class="list-title" style="margin-bottom: 8px;">Current Tally Summary (Weight)</div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
+          <span>Yes:</span>
+          <strong>{{ "%.1f"|format(vote_summary.get('yes', 0)) }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
+          <span>No:</span>
+          <strong>{{ "%.1f"|format(vote_summary.get('no', 0)) }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+          <span>Abstain:</span>
+          <strong>{{ "%.1f"|format(vote_summary.get('abstain', 0)) }}</strong>
         </div>
       </div>
     </div>
@@ -118,5 +156,30 @@
     chatWindow.appendChild(msgDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
   });
+
+  // Handle voting action
+  function submitVote(proposalId, choice) {
+    fetch(`/api/proposals/${proposalId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ choice: choice })
+    })
+    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+    .then(result => {
+        const feedback = document.getElementById('vote-feedback');
+        if (result.status === 201) {
+            feedback.textContent = `Success! Recorded ${choice} vote (Weight: ${result.body.weight_cast})`;
+            feedback.style.color = '#2e7d32';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            feedback.textContent = result.body.error || 'Failed to cast vote.';
+            feedback.style.color = '#c62828';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById('vote-feedback').textContent = 'An error occurred while voting.';
+    });
+  }
 </script>
 {% endblock %}

@@ -19,7 +19,7 @@ def manage_uses():
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute(
-                """INSERT INTO system_uses (scheduled_date, description, organizer_id, fee_amount, fee_status) 
+                """INSERT INTO events (scheduled_date, description, organizer_id, fee_amount, fee_status) 
                    VALUES (?, ?, ?, ?, 'pending')""",
                 (scheduled_date, description, user_id, fee_amount)
             )
@@ -32,7 +32,7 @@ def manage_uses():
     cursor = conn.cursor()
     cursor.execute("""
         SELECT su.*, u.username as organizer_name 
-        FROM system_uses su 
+        FROM events su 
         LEFT JOIN users u ON su.organizer_id = u.id 
         ORDER BY su.scheduled_date DESC
     """)

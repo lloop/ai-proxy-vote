@@ -8,14 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT DEFAULT 'member',
     status TEXT DEFAULT 'Active',
     eligible_to_vote INTEGER DEFAULT 1,
+    voting_weight REAL DEFAULT 1.0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Seed initial test users
-INSERT OR IGNORE INTO users (username, password, email, role, status, eligible_to_vote) VALUES 
-('lloop', 'password123', 'lloop#lloop.com', 'organizer', 'Active', 1),
-('lloop_2', 'password123', 'lloop2#lloop.com', 'member', 'Active', 1),
-('lloop_3', 'password123', 'lloop3#lloop.com', 'member', 'Active', 1);
 
 -- 2. PROPOSALS TABLE
 -- Stores community governance issues and spending requests.
@@ -24,15 +19,11 @@ CREATE TABLE IF NOT EXISTS proposals (
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     creator_id INTEGER NOT NULL,
-    status TEXT NOT NULL CHECK(status IN ('active', 'passed', 'rejected', 'executed')) DEFAULT 'active',
+    status TEXT NOT NULL CHECK(status IN ('Challenge period', 'Discussion', 'Voting', 'Rejected', 'Quorum Not Met', 'Approved')) DEFAULT 'Challenge period',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     closes_at TIMESTAMP NOT NULL,
     FOREIGN KEY (creator_id) REFERENCES users(id)
 );
-
--- Seed initial proposals
-INSERT OR IGNORE INTO proposals (id, title, description, creator_id, status, closes_at) VALUES 
-(1, 'new prop', 'a brand new one', 1, 'active', datetime('now', '+3 days'));
 
 -- 3. VOTES TABLE
 -- Ensures each user can cast only one vote per proposal.
@@ -40,12 +31,12 @@ CREATE TABLE IF NOT EXISTS votes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     proposal_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    choice TEXT NOT NULL CHECK(choice IN ('yes', 'no', 'abstain')),
-    weight_cast REAL NOT NULL DEFAULT 1.0,
-    cast_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    UNIQUE(proposal_id, user_id)
+    choice TEXT CHECK(choice IN ('yes', 'no', 'abstain')) NOT NULL,
+    weight_cast REAL NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(proposal_id, user_id),
+    FOREIGN KEY (proposal_id) REFERENCES proposals(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- 4. TREASURY TRANSACTIONS & USAGE LOGS TABLE
@@ -87,7 +78,7 @@ CREATE TABLE IF NOT EXISTS participation_logs (
 
 -- 7. SYSTEM USES TABLE
 -- Tracks scheduled equipment or facility usage, organizing member responsibility, and pending treasury usage fees.
-CREATE TABLE IF NOT EXISTS system_uses (
+CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     scheduled_date TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -120,3 +111,25 @@ CREATE TABLE IF NOT EXISTS mock_bank_transactions (
     FOREIGN KEY (account_id) REFERENCES mock_bank_accounts (id)
 );
 
+
+-- Seed initial test users
+INSERT OR IGNORE INTO users (username, password, email, role, status, eligible_to_vote) VALUES 
+('lloop', 'password123', 'lloop#lloop.com', 'organizer', 'Active', 1),
+('lloop_2', 'password123', 'lloop2#lloop.com', 'member', 'Active', 1),
+('lloop_3', 'password123', 'lloop3#lloop.com', 'member', 'Active', 1);
+
+-- Seed initial proposals
+INSERT OR IGNORE INTO proposals (id, title, description, creator_id, status, closes_at) VALUES 
+(1, 'new prop', 'a brand new one', 1, 'Challenge period', datetime('now', '+3 days')),
+(2, 'new prop', 'a brand new one', 1, 'Discussion', datetime('now', '+3 days')),
+(3, 'new prop', 'a brand new one', 1, 'Voting', datetime('now', '+3 days'));
+
+-- Seed initial treasury logs
+INSERT OR IGNORE INTO treasury_logs (id, transaction_type, amount, logged_by, description) VALUES 
+(1, 'contribution', 50, 1, 'blah blah blah'),
+(2, 'expense', 20, 2, 'blah blah blah');
+
+-- Seed initial events
+INSERT OR IGNORE INTO events (scheduled_date, description, organizer_id, fee_amount, fee_status) VALUES 
+('2026-10-13T18:33', 'event event event', 1, 50, 'pending'),
+('2026-11-13T18:33', 'event 2 event 2', 2, 50, 'pending');

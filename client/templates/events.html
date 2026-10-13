@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% set active_page = "uses" %}
-{% block title %}System Uses & Fees{% endblock %}
-{% block breadcrumb %}System Uses{% endblock %}
+{% set active_page = "events" %}
+{% block title %}Community Events & Fees{% endblock %}
+{% block breadcrumb %}Events{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>System Uses</h1><p class="subtitle">Schedule equipment or facility usage, assign responsible organizers, and track pending fees.</p></div>
-  <a class="button primary" href="#schedule-form">＋ Schedule usage</a>
+  <div><h1>Events</h1><p class="subtitle">Schedule community events, assign responsible organizers, and track pending fees.</p></div>
+  <a class="button primary" href="#schedule-form">＋ Schedule event</a>
 </div>
 
 <div class="card">
-  <div class="card-head"><h2>Scheduled Uses & Treasury Log</h2></div>
+  <div class="card-head"><h2>Scheduled Events & Treasury Log</h2></div>
   <div class="table-wrap">
     <table>
       <thead>
@@ -22,19 +22,19 @@
         </tr>
       </thead>
       <tbody>
-      {% for use in uses %}
+      {% for event in events %}
         <tr>
-          <td>{{ use.scheduled_date }}</td>
+          <td>{{ event.scheduled_date }}</td>
           <td>
-            <div class="primary-cell">{{ use.description }}</div>
-            <div class="secondary">ID: #{{ use.id }}</div>
+            <div class="primary-cell">{{ event.description }}</div>
+            <div class="secondary">ID: #{{ event.id }}</div>
           </td>
-          <td>{{ use.organizer_name or 'Unknown' }}</td>
-          <td>{{ "%.2f"|format(use.fee_amount) }} €</td>
-          <td><span class="badge {% if use.fee_status == 'paid' %}green{% else %}amber{% endif %}">{{ use.fee_status|title }}</span></td>
+          <td>{{ event.organizer_name or 'Unknown' }}</td>
+          <td>{{ "%.2f"|format(event.fee_amount) }} €</td>
+          <td><span class="badge {% if event.fee_status == 'paid' %}green{% else %}amber{% endif %}">{{ event.fee_status|title }}</span></td>
         </tr>
       {% else %}
-        <tr><td colspan="5"><div class="empty">No system uses scheduled yet.</div></td></tr>
+        <tr><td colspan="5"><div class="empty">No events scheduled yet.</div></td></tr>
       {% endfor %}
       </tbody>
     </table>
@@ -42,15 +42,15 @@
 </div>
 
 <div class="card" id="schedule-form" style="margin-top: 18px;">
-  <div class="card-head"><h2>Schedule new system usage</h2><span class="badge">50 € Fee</span></div>
-  <form class="form-grid" method="post" action="/uses">
+  <div class="card-head"><h2>Schedule new event</h2><span class="badge">50 € Fee</span></div>
+  <form class="form-grid" method="post" action="/events">
     <div class="field">
       <label for="scheduled_date">Date & Time</label>
       <input type="datetime-local" id="scheduled_date" name="scheduled_date" required>
     </div>
     <div class="field">
-      <label for="description">Usage Description</label>
-      <textarea id="description" name="description" placeholder="Specify what equipment or facility space is being used..." required></textarea>
+      <label for="description">Event Description</label>
+      <textarea id="description" name="description" placeholder="Specify what the event is about..." required></textarea>
     </div>
     <button class="button primary" type="submit">Confirm & Add Pending Fee</button>
   </form>
