@@ -1,6 +1,6 @@
-# Co-so-sys
+# AI Proxy Vote
 
-Community Sound System Governance is a Flask application for community
+AI Proxy Vote is a Flask application for community
 decision-making and administration. It includes member accounts, proposals and
 voting, real-time community chat, scheduled facility or equipment use, and a
 mock treasury ledger. Application data is stored in SQLite.
