@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% set active_page = "proposals" %}
+{% block title %}Proposals{% endblock %}
+{% block breadcrumb %}Proposals{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Proposals</h1>
+    <p class="subtitle">Review proposals and follow their progress.</p>
+  </div>
+  <a class="button primary" href="#new-proposal">＋ New proposal</a>
+</div>
+
+<div class="grid stats">
+  <div class="card">
+    <div class="stat-label">Open proposals</div>
+    <div class="stat-value">{{ open_count }}</div>
+    <div class="stat-foot">Awaiting a decision</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">In discussion</div>
+    <div class="stat-value">{{ discussion_count }}</div>
+    <div class="stat-foot">Active discussion phase</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Passed automatically</div>
+    <div class="stat-value">{{ passed_count }}</div>
+    <div class="stat-foot">Passed without a challenge</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>All proposals</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Proposal</th><th>Submitted by</th><th>Status</th><th>Closes</th><th>Activity</th></tr>
+      </thead>
+      <tbody>
+        {% for proposal in proposals %}
+        <tr>
+          <td>
+            <a href="{{ url_for('proposals_bp.proposal_detail', proposal_id=proposal.id) }}" class="primary-cell">{{ proposal.title }}</a>
+            <div class="secondary">#{{ proposal.id }} · {{ proposal.description[:80] }}{% if proposal.description|length > 80 %}…{% endif %}</div>
+          </td>
+          <td>{{ proposal.creator_name or 'Unknown member' }}</td>
+          <td><span class="badge blue">{{ proposal.status|replace('_', ' ')|title }}</span></td>
+          <td>{{ proposal.closes_at }}</td>
+          <td class="muted">{{ proposal.comment_count }} comments</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5"><div class="empty">No proposals yet. Create the first one below.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="new-proposal" style="margin-top: 18px;">
+  <div class="card-head"><h2>New proposal</h2></div>
+  <form class="form-grid" method="post" action="{{ url_for('proposals_bp.get_proposals') }}">
+    <div class="field">
+      <label for="proposal-title">Title</label>
+      <input id="proposal-title" name="title" placeholder="A clear, specific proposal" required>
+    </div>
+    <div class="field">
+      <label for="proposal-body">Description</label>
+      <textarea id="proposal-body" name="body" placeholder="Describe what should change, why, and any expected costs." required></textarea>
+    </div>
+    <button class="button primary" type="submit">Submit proposal</button>
+  </form>
+</div>
+{% endblock %}
